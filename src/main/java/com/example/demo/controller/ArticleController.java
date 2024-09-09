@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartRequest;
 
+import com.example.demo.repository.ArticleRepository;
+import com.example.demo.repository.MemberRepository;
 import com.example.demo.service.ArticleService;
 import com.example.demo.service.BoardService;
 import com.example.demo.service.GenFileService;
@@ -263,4 +265,17 @@ public class ArticleController {
 	public String showDiscount() {
 		return "/usr/article/discount";
 	}
+	@Autowired
+    private ArticleRepository articleRepository;
+	@Autowired
+    private MemberRepository memberRepository;
+
+    @RequestMapping("/qna")
+    public String showQnaPage(Model model) {
+        int articleCount = articleRepository.countAll();
+        model.addAttribute("articleCount", articleCount);
+        int memberCount = memberRepository.countAll();
+        model.addAttribute("memberCount", memberCount);
+        return "usr/article/qna"; // qna.jsp로 이동
+    }
 }

@@ -168,11 +168,10 @@ public interface MemberRepository {
 			""")
 	void deleteMember(int id);
 	
-	@Mapper
-	public interface Memberrepository {
 	    
 	    @Select("SELECT nickname FROM `member`")
 	    Member getMembername();
-
-	}
+	    
+	    @Select("SELECT COUNT(*) FROM member")
+		public int countAll();
 }

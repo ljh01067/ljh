@@ -199,5 +199,7 @@ public interface ArticleRepository {
 			FROM article
 			""")
 	public int getCurrentArticleId();
-
+	
+	@Select("SELECT COUNT(*) FROM article")
+	public int countAll();
 }

@@ -2,12 +2,13 @@ package com.example.demo.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.example.demo.repository.ArticleRepository;
 import com.example.demo.repository.MemberRepository;
-import com.example.demo.repository.MemberRepository.Memberrepository;
 import com.example.demo.service.MemberService;
 import com.example.demo.util.Ut;
 import com.example.demo.vo.Member;
@@ -246,28 +247,4 @@ public class UsrMemberController {
 		return Ut.jsReplace(notifyTempLoginPwByEmailRd.getResultCode(), notifyTempLoginPwByEmailRd.getMsg(),
 				afterFindLoginPwUri);
 	}
-	@RequestMapping("/usr/member/qna")
-    public ModelAndView showQnaPage(@RequestParam(value = "userInput", required = false) String userInput) {
-        ModelAndView mav = new ModelAndView("usr/member/qna"); // JSP 페이지 이름
-
-        // 예제: ID 1로 Member 정보를 조회합니다. 실제로는 적절한 ID를 사용해야 합니다.
-        Member member = memberService.getMemberById(1); // 실제로는 로그인된 사용자의 ID를 사용해야 함
-
-        String botResponse = "";
-        if (userInput != null && !userInput.trim().isEmpty()) {
-            if (userInput.toLowerCase().contains("안녕")) {
-                botResponse = "안녕하세요. 무엇을 도와드릴까요 <br> 검색가능한 단어는 총 2가지입니다 <br> 맴버 or 글";
-            } else if (userInput.toLowerCase().contains("맴버")) {
-                botResponse = "회원 ID는 " + member.getId() + " 입니다.<br>";
-            } else {
-                botResponse = "죄송합니다. 다시 시도해 주세요";
-            }
-        }
-
-        mav.addObject("userInput", userInput);
-        mav.addObject("botResponse", botResponse);
-        mav.addObject("member", member);
-
-        return mav;
-    }
 }
