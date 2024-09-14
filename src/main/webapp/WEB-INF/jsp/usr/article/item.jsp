@@ -2,108 +2,292 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <c:set var="pageTitle" value="ITEM"></c:set>
 <%@ include file="../common/head.jspf"%>
+<script>
+function updateStore() {
+    const business = document.querySelectorAll("input[name='business']:checked");
+    const region = document.getElementById("region").value;
+    console.log(business);
+
+    // 업소 선택 여부 확인
+    if (business.length === 0) {
+        alert("업소를 선택해 주세요.");
+        return;
+    }
+
+    // 선택된 업소 값을 배열로 변환
+    const businessValues = Array.from(business).map(input => input.value);
+
+    // Ajax로 업소 코드 이름 가져오기
+    $.ajax({
+    url: `/usr/article/businesscodename`,
+    type: 'GET',
+    traditional: true,  // 배열을 전통적인 방식으로 직렬화
+    data: { business: businessValues },
+    success: function(businessCodeNames) {
+    	console.log('업소 코드 이름들:', businessCodeNames);
+            // XML 데이터 요청
+            fetch('/usr/home/getSData')
+                .then(response => response.text())
+                .then(xmlResponse => {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+
+                    // XML 데이터에서 'iros.openapi.service.vo.entpInfoVO' 태그 찾기
+                    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+                    const storeNames = [];
+
+                    // XML 데이터에서 조건에 맞는 항목 필터링
+                    Array.from(items).forEach(item => {
+                        const entptypecode = item.getElementsByTagName('entpTypeCode')[0]?.textContent.trim();
+                        const roadaddrbasic = item.getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().split(' ')[0];
+
+                        // 업소 코드와 지역 조건에 맞는 항목을 필터링
+                        if (businessCodeNames.includes(entptypecode) && (region === '*' || roadaddrbasic === region)) {
+                            const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
+                            if (storeName) {
+                                storeNames.push(storeName);
+                            }
+                        }
+                    });
+
+                    // 상점 목록을 갱신
+                    const storeSelect = document.getElementById("store");
+                    storeSelect.innerHTML = "<option value='' selected disabled>전체</option>";
+                    storeNames.forEach(store => {
+                        const option = document.createElement("option");
+                        option.value = store;
+                        option.textContent = store;
+                        storeSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('XML 데이터를 가져오는 중 오류 발생:', error);
+                    alert('XML 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+                });
+        },
+        error: function(xhr, status, error) {
+            console.error('업소 코드를 가져오는 중 오류 발생:', error);
+            alert('업소 코드를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+        }
+    });
+}
+function updateDetailItems() {
+    const category = document.getElementById("category").value;
+    const detailItemSelect = document.getElementById("detailItem");
+
+    if (!category) {
+        alert("품목을 선택해 주세요.");
+        return;
+    }
+
+    $.ajax({
+        url: `/usr/article/detailItems`,
+        type: 'GET',
+        data: { category: category },
+        success: function(data) {
+            if (Array.isArray(data)) {
+                detailItemSelect.innerHTML = "<option value='' selected disabled>상세품목을 선택하세요</option>";
+                data.forEach(item => {
+                    const option = document.createElement("option");
+                    option.value = item;
+                    option.textContent = item;
+                    detailItemSelect.appendChild(option);
+                });
+            } else {
+                console.error('서버 응답이 배열이 아닙니다:', data);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('상세 품목을 가져오는 중 오류 발생:', error);
+            alert('상세 품목을 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+        }
+    });
+}
+
+function updateProductOptions() {
+    const detailItem = document.getElementById("detailItem").value;
+
+    if (!detailItem) {
+        alert("상세품목을 선택해 주세요.");
+        return;
+    }
+
+    // 첫 번째 AJAX 호출: goodsmlclscode 가져오기
+    $.ajax({
+        url: `/usr/article/products`,
+        type: 'GET',
+        data: { detailItem: detailItem },
+        success: function(goodsmlclscode) {
+
+            // 두 번째 AJAX 호출: XML 데이터 가져오기
+            fetch('/usr/home/getCData')
+                .then(response => response.text())
+                .then(xmlResponse => {
+                   
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+                    
+                    const items = xmlDoc.getElementsByTagName('item');
+                    const goodNames = []; // goodName을 저장할 배열
+
+                    for (let i = 0; i < items.length; i++) {
+                        const goodSmlclsCode = items[i].getElementsByTagName('goodSmlclsCode')[0].textContent;
+                        if (goodSmlclsCode === '0'+goodsmlclscode) {
+                            const itemName = items[i].getElementsByTagName('goodName')[0].textContent;
+                            goodNames.push(itemName); // goodName을 배열에 추가
+                        }
+                    }
+
+                    
+                    // 상품 선택 목록 업데이트
+                    const productSelect = document.getElementById("product");
+                    productSelect.innerHTML = "<option value='' selected disabled>상품을 선택하세요</option>";
+                    goodNames.forEach(name => {
+                        const option = document.createElement("option");
+                        option.value = name; // 선택 값으로 goodName을 설정
+                        option.textContent = name; // 표시되는 텍스트로 goodName을 설정
+                        productSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('XML 데이터를 가져오는 중 오류 발생:', error);
+                    alert('XML 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+                });
+        },
+        error: function(xhr, status, error) {
+            console.error('goodsmlclscode를 가져오는 중 오류 발생:', error);
+            alert('goodsmlclscode를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+        }
+    });
+}
+</script>
+<script>
+function fetchItemList() {
+    const category = document.getElementById("category").value;
+    const detailItem = document.getElementById("detailItem").value;
+    const product = document.getElementById("product").value;
+    const store = document.getElementById("store").value;
+    const region = document.getElementById("region").value;
+
+    if (!category || !detailItem || !product || !store || !region) {
+        alert("모든 항목을 선택해 주세요.");
+        return;
+    }
+
+    // 선택한 항목으로 서버에 요청을 보냄
+    $.ajax({
+        url: '/usr/article/fetchItems',
+        type: 'GET',
+        data: {
+            category: category,
+            detailItem: detailItem,
+            product: product,
+            store: store,
+            region: region
+        },
+        success: function(itemlist) {
+            updateTable(itemlist);
+        },
+        error: function(xhr, status, error) {
+            console.error('아이템 목록을 가져오는 중 오류 발생:', error);
+            alert('아이템 목록을 가져오는 데 실패했습니다. 다시 시도해 주세요.');
+        }
+    });
+}
+
+function updateTable(itemlist) {
+    const tbody = document.querySelector("tbody");
+    tbody.innerHTML = "";  // 기존 데이터를 초기화
+
+    // 새로운 데이터를 테이블에 추가
+    itemlist.forEach(item => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td style="text-align: center;">${item.legion}</td>
+            <td style="text-align: center;">${item.store}</td>
+            <td style="text-align: center;">${item.name}</td>
+            <td style="text-align: center;">${item.currentprice}</td>
+            <td style="text-align: center;">${item.highestprice}</td>
+            <td style="text-align: center;">${item.lowestprice}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+</script>
+
+<!-- 조회하기 버튼 -->
 <div class="ta-c">
-<div class="inline-block pd-0 mg-0 ta-c">
-<div class="inline-block w-50px pd-0 mg-0">업소</div>
-<div class="inline-block pd-0 mg-l--5 ta-c">
-    <label>
-      <input type="checkbox">
-      <span>대형마트</span>
-    </label>
-    <label>
-      <input type="checkbox">
-      <span>백화점</span>
-    </label>
-    <label>
-      <input type="checkbox">
-      <span>슈퍼마켓</span>
-    </label>
-    <label>
-      <input type="checkbox">
-      <span>전통시장</span>
-    </label>
-    <label>
-      <input type="checkbox">
-      <span>편의점</span>
-    </label>
-    </div>
-    </div>
     <br>
-    <div class="inline-block w-50px pd-0 mg-0">지역</div>
-<div class="inline-block pd-0 mg-l--5 ta-c">
-     <select name="" id="">
-      <option value="1">전체</option>
-      <option value="2">서울특별시</option>
-      <option value="3">부산광역시</option>
-      <option value="4">대구광역시</option>
-      <option value="5">대전광역시</option>
-      <option value="6">광주광역시</option>
-      <option value="7">울산광역시</option>
-      <option value="8">인천광역시</option>
-      <option value="9">강원특별자치도</option>
-      <option value="10">경기도</option>
-      <option value="11">경상남도</option>
-      <option value="12">경상북도</option>
-      <option value="13">전라남도</option>
-      <option value="14">전북특별자치도</option>
-      <option value="15">충청남도</option>
-      <option value="16">충청북도</option>
-      <option value="17">제주특별자치도</option>
-      <option value="18">세종특별자치시</option>
-    </select>
+    <button class="w-500 b-l-1" onclick="fetchItemList()">조회하기</button>
+</div>
+<div class="ta-c">
+    <div class="inline-block ta-c b-l-1 w-500">
+        <div class="inline-block pd-0 mg-0 ta-c">
+            <div class="inline-block w-75px pd-0 mg-0">업소</div>
+            <div class="inline-block pd-0 mg-l--5 ta-c checkbox-item">
+                <c:forEach var="business" items="${business}">
+            <input type="checkbox" id="business-${business}" name="business" value="${business}" onchange="updateStore()">
+            <label for="business-${business}">${business}</label>
+    </c:forEach>
+            </div>
+        </div>
+        <hr>
+        <br>
+        <div class="inline-block w-75px pd-0 mg-0">지역</div>
+        <div class="inline-block w-150px pd-0 mg-l--5 ta-c m-b-25">
+            <select name="region" id="region" onchange="updateStore()">
+    <option value="*">전체</option>
+    <c:forEach var="region" items="${region}">
+        <option value="${region}">${region}</option>
+    </c:forEach>
+</select>
+        </div>
+        <div class="inline-block w-75px pd-0 mg-0">판매점</div>
+        <div class="inline-block w-150px pd-0 mg-l--5 ta-c">
+            <select name="store" id="store" style="vertical-align: middle;">
+                    <option value="" selected disabled>전체</option>
+                </select>
+        </div>
+        <hr>
+        <br>
+        <div class="inline-block pd-0 mg-0 ta-c">
+            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">품목</div>
+            <div class="inline-block pd-0 mg-l--5 ta-c m-b-25">
+                <select name="category" id="category" onchange="updateDetailItems()">
+    <option value="" selected disabled>품목을 선택하세요</option>
+    <c:forEach var="category" items="${categories}">
+        <option value="${category}">${category}</option>
+    </c:forEach>
+</select>
+            </div>
+            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">상세품목</div>
+            <div class="inline-block pd-0 mg-l--5 ta-c">
+                <select name="detailItem" id="detailItem" onchange="updateProductOptions()" style="vertical-align: middle;">
+                    <option value="" selected disabled>상세품목을 선택하세요</option>
+                </select>
+            </div>
+            <hr class="w-500px">
+            <br>
+            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">상품</div>
+            <div class="inline-block w-400px pd-0 mg-l--5 ta-c m-b-25">
+                <select name="product" id="product" style="vertical-align: middle;">
+                    <option value="" selected disabled>상품을 선택하세요</option>
+                </select>
+            </div>
+        </div>
     </div>
-    <div class="inline-block w-50px pd-0 mg-0">판매점</div>
-<div class="inline-block pd-0 mg-l--5 ta-c">
-     <select name="" id="">
-      <option value="1">전체</option>
-      <option value="2">대형마트</option>
-      <option value="3">백화점</option>
-      <option value="4">슈퍼마켓</option>
-      <option value="5">전통시장</option>
-      <option value="6">편의점</option>
-    </select>
-    </div>
-    <br>
-    <div class="inline-block w-50px pd-0 mg-0">품목</div>
-<div class="inline-block pd-0 mg-l--5 ta-c">
-     <select name="" id="">
-     <option value="" selected disabled>품목을 선택하세요</option>
-      <option value="1">곡물가공품</option>
-      <option value="2">정육·난류</option>
-      <option value="3">수산가공품</option>
-      <option value="4">낙농·축산가공품</option>
-      <option value="5">조미료·장류·식용유</option>
-      <option value="6">채소</option>
-      <option value="7">과자·빙과류</option>
-      <option value="8">차·음료·주류</option>
-      <option value="9">미용품</option>
-      <option value="10">세탁·주방·가사용품</option>
-      <option value="11">생선류</option>
-      <option value="12">기타 가공식품</option>
-      <option value="13">곡물</option>
-    </select>
-    </div>
-    <div class="inline-block w-50px pd-0 mg-0">상세품목</div>
-<div class="inline-block pd-0 mg-l--5 ta-c">
-     <select name="" id="">
-     <option value="" selected disabled>품목을 선택하세요</option>
-      <option value="1">곡물가공품</option>
-      <option value="2">정육·난류</option>
-      <option value="3">수산가공품</option>
-      <option value="4">낙농·축산가공품</option>
-      <option value="5">조미료·장류·식용유</option>
-      <option value="6">채소</option>
-      <option value="7">과자·빙과류</option>
-      <option value="8">차·음료·주류</option>
-      <option value="9">미용품</option>
-      <option value="10">세탁·주방·가사용품</option>
-      <option value="11">생선류</option>
-      <option value="12">기타 가공식품</option>
-      <option value="13">곡물</option>
-    </select>
-    </div>
-    </div>
+</div>
+<div class="ta-c">
+<br>
+<button class="w-500 b-l-1">조회하기</button>
+</div>
+
     <style>
+    hr { border-top:1px solid #9C9C9C;
+    border-bottom:1px solid #F6F6F6;
+    }
     body{
     position:flex;
     justify-content: center;
@@ -117,11 +301,20 @@
     .inline-block{
     display:inline-block;
     }
-    .w-50px{
-    width:50px;
+    .w-75px{
+    width:75px;
+    }
+    .w-100px{
+    width:100px;
+    }
+    .w-140px{
+    width:140px;
+    }
+    .w-150px{
+    width:145px;
     }
     .w-400px{
-    width:400px;
+    width:398px;
     }
     .w-500px{
     width:500px;
@@ -155,6 +348,18 @@
     }
     .right-0{
     right:0;
+    }
+    .b-l-1{
+    border:1px solid;
+    }
+    .w-500{
+    width:500px;
+    }
+    .w-100%{
+    width:100%;
+    }
+    .m-b-25{
+    margin-bottom:25px;
     }
     </style>
 <%@ include file="../common/foot.jspf"%>
