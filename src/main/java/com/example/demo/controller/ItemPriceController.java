@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.service.ItemPriceService;
+import com.example.demo.vo.ItemPrice;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,6 +30,26 @@ public class ItemPriceController {
         List<String> region = itemPriceService.getRegion(); 
         model.addAttribute("region", region);
         return "/usr/article/item"; // JSP 페이지 이름
+    }
+    @GetMapping("/cart")
+    public String showCartPage(Model model) {
+        List<String> categories = itemPriceService.getCategories();
+        model.addAttribute("categories", categories);
+        List<String> business = itemPriceService.getBusiness(); 
+        model.addAttribute("business", business);
+        List<String> region = itemPriceService.getRegion(); 
+        model.addAttribute("region", region);
+        return "/usr/article/cart"; // JSP 페이지 이름
+    }
+    @GetMapping("/discount")
+    public String showDiscountPage(Model model) {
+        List<String> categories = itemPriceService.getCategories();
+        model.addAttribute("categories", categories);
+        List<String> business = itemPriceService.getBusiness(); 
+        model.addAttribute("business", business);
+        List<String> region = itemPriceService.getRegion(); 
+        model.addAttribute("region", region);
+        return "/usr/article/discount"; // JSP 페이지 이름
     }
     @GetMapping("/detailItems")
     @ResponseBody
@@ -97,15 +119,5 @@ public class ItemPriceController {
     @ResponseBody
     public List<String> getItemList() {
         return itemPriceService.getRegion();
-    }
-    @GetMapping("/fetchItems")
-    @ResponseBody
-    public List<Item> fetchItems(@RequestParam String category, 
-                                 @RequestParam String detailItem, 
-                                 @RequestParam String product, 
-                                 @RequestParam String store, 
-                                 @RequestParam String region) {
-        
-        return itemPriceService.getFilteredItems(category, detailItem, product, store, region);
     }
 }

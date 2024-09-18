@@ -3,42 +3,22 @@
 <c:set var="pageTitle" value="API TEST"></c:set>
 
 <script>
-function getCData() {
-    const url = '/usr/home/getCData'; // 서버에서 프록시로 API 호출
+function getPData(entpId, goodId) {
+    // 값 확인
+    console.log("entpId:", entpId); // entpId 값 확인
+    console.log("goodId:", goodId); // goodId 값 확인
+    
+    // URL 생성
+    const goodInspectDay = '20220805'; // 고정값
+    const url = `/usr/home/getPData?entpId=`+entpId+`&goodId=`+goodId+`&goodInspectDay=`+goodInspectDay;
+    
+    // URL 확인
+    console.log("Request URL:", url);
+
+    // XMLHttpRequest 설정
     const xhr = new XMLHttpRequest();
-
     xhr.open("GET", url, true);
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            const xmlResponse = xhr.responseText;
-            console.log("XML Data:", xmlResponse);
-            
-            // 여기서 XML 파싱 및 처리를 수행
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
-            
-            const items = xmlDoc.getElementsByTagName('item');
-            for (let i = 0; i < items.length; i++) {
-            	const goodSmlclsCode = items[i].getElementsByTagName('goodSmlclsCode')[0].textContent;
-            	if(goodSmlclsCode == '030201021'){
-            	 const itemId = items[i].getElementsByTagName('goodId')[0].textContent;
-                 const itemName = items[i].getElementsByTagName('goodName')[0].textContent;
-                 console.log('Item Id /Item Name:',itemId, itemName);
-            	}
-            }
-        }
-    };
-    xhr.send();
-}
 
-getCData();
-</script>
-<script>
-function getSData() {
-    const url = '/usr/home/getSData';
-    const xhr = new XMLHttpRequest();
-
-    xhr.open("GET", url, true);
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
             const xmlResponse = xhr.responseText;
@@ -48,23 +28,23 @@ function getSData() {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
             
-            // XML 문서의 전체 구조 확인
+            // XML 문서 구조 확인
             console.log("XML Document:", xmlDoc.documentElement.innerHTML);
 
-            // XML 데이터에서 'iros.openapi.service.vo.entpInfoVO' 태그 찾기
-            const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+            // XML 데이터에서 'iros.openapi.service.vo.goodPriceVO' 태그 찾기
+            const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.goodPriceVO');
             console.log("Items:", items);
 
             // XML 데이터에서 필드를 추출하여 처리
             if (items.length > 0) {
                 Array.from(items).forEach(item => {
                     const entpId = item.getElementsByTagName('entpId')[0]?.textContent.trim();
-                    const entpName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
-                    const roadAddrBasic = item.getElementsByTagName('roadAddrBasic')[0]?.textContent.trim();
+                    const itemName = item.getElementsByTagName('itemName')[0]?.textContent.trim();
+                    const price = item.getElementsByTagName('price')[0]?.textContent.trim();
 
                     console.log("EntpId:", entpId);
-                    console.log("EntpName:", entpName);
-                    console.log("RoadAddrBasic:", roadAddrBasic);
+                    console.log("Item Name:", itemName);
+                    console.log("Price:", price);
 
                     // 필요한 정보를 사용하여 추가 처리
                 });
@@ -75,9 +55,8 @@ function getSData() {
 }
 
 // 함수를 호출하는 부분
-getSData();
+getPData('63', '24');
 </script>
-
 
 <%@ include file="../common/head.jspf"%>
 

@@ -1,6 +1,5 @@
 package com.example.demo.service;
 
-import com.example.demo.controller.Item;
 import com.example.demo.dto.ItemPriceResponse;
 import com.example.demo.repository.ItemPriceRepository;
 
@@ -45,10 +44,4 @@ public class ItemPriceService {
     public String findGoodsmlclscodeByDetailItem(String detailItem) {
         return itemPriceRepository.findGoodsmlclscodeByDetailId(detailItem);
     }
-
-	public List<Item> getFilteredItems(String category, String detailItem, String product, String store,
-			String region) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

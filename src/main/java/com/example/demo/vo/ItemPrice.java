@@ -58,5 +58,4 @@ public class ItemPrice {
         this.date = date;
     }
 
-    // toString, equals, hashCode methods if needed
 }
