@@ -456,11 +456,18 @@ function updateTotalSum() {
 }
 
 </script>
-
-<div class="ta-c">
-    <div class="inline-block ta-c b-l-1 w-500">
-        <div class="inline-block pd-0 mg-0 ta-c">
-            <div class="inline-block w-75px pd-0 mg-0">업소</div>
+<div class="w-100%">
+<div class="inline-block w-1200px">
+<div class="fs-20px ta-l">
+<div class="w-200px ta-c">
+장바구니 가격비교
+</div>
+</div>
+<br>
+<div class="w-1200px">
+    <div class="inline-block ta-c b-l-1 w-1200px">
+        <div class="inline-block pd-0 mg-0 w-1200px ta-l">
+            <div class="inline-block w-100px pd-0 mg-0 ta-c">업소</div>
             <div class="inline-block pd-0 mg-l--5 ta-c checkbox-item">
                 <c:forEach var="business" items="${business}">
             <input type="checkbox" id="business-${business}" name="business" value="${business}" onchange="updateStore()">
@@ -470,8 +477,9 @@ function updateTotalSum() {
         </div>
         <hr>
         <br>
-        <div class="inline-block w-75px pd-0 mg-0">지역</div>
-        <div class="inline-block w-150px pd-0 mg-l--5 ta-c m-b-25">
+        <div class="w-1200px ta-l">
+        <div class="inline-block w-100px ta-c pd-0 mg-0">지역</div>
+        <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
             <select name="region" id="region" onchange="updateStore()">
     <option value="*">전체</option>
     <c:forEach var="region" items="${region}">
@@ -479,17 +487,18 @@ function updateTotalSum() {
     </c:forEach>
 </select>
         </div>
-        <div class="inline-block w-75px pd-0 mg-0">판매점</div>
-        <div class="inline-block w-150px pd-0 mg-l--5 ta-c">
+        <div class="inline-block w-100px pd-0 mg-0">판매점</div>
+        <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
             <select name="store" id="store" style="vertical-align: middle;">
                     <option value="" selected disabled>전체</option>
                 </select>
         </div>
+        </div>
         <hr>
         <br>
-        <div class="inline-block pd-0 mg-0 ta-c">
-            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">품목</div>
-            <div class="inline-block pd-0 mg-l--5 ta-c m-b-25">
+        <div class="inline-block pd-0 mg-0 ta-l">
+            <div class="inline-block w-100px ta-c pd-0 mg-0" style="vertical-align: middle;">품목</div>
+            <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="category" id="category" onchange="updateDetailItems()">
     <option value="" selected disabled>품목을 선택하세요</option>
     <c:forEach var="category" items="${categories}">
@@ -497,22 +506,24 @@ function updateTotalSum() {
     </c:forEach>
 </select>
             </div>
-            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">상세품목</div>
-            <div class="inline-block pd-0 mg-l--5 ta-c">
+            <div class="inline-block w-100px pd-0 mg-0" style="vertical-align: middle;">상세품목</div>
+            <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
                 <select name="detailItem" id="detailItem" onchange="updateProductOptions()" style="vertical-align: middle;">
                     <option value="" selected disabled>상세품목을 선택하세요</option>
                 </select>
             </div>
-            <hr class="w-500px">
+            <hr class="w-1200px">
             <br>
-            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">상품</div>
-            <div class="inline-block w-400px pd-0 mg-l--5 ta-c m-b-25">
+            <div class="inline-block ta-c w-100px pd-0 mg-0" style="vertical-align: middle;">상품</div>
+            <div class="inline-block w-1100px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="product" id="product" style="vertical-align: middle;">
                     <option value="" selected disabled>상품을 선택하세요</option>
                 </select>
             </div>
         </div>
     </div>
+</div>
+</div>
 </div>
 <!-- 조회하기 버튼 -->
 <div class="ta-c">
@@ -543,7 +554,7 @@ function updateTotalSum() {
 </div>
 
     <style>
-    hr { border-top:1px solid #9C9C9C;
+   hr { border-top:1px solid #9C9C9C;
     border-bottom:1px solid #F6F6F6;
     }
     body{
@@ -552,12 +563,16 @@ function updateTotalSum() {
     align-items: center;
     margin: 0;
     padding: 0;
+    text-align:center;
     }
     .block{
     display:block;
     }
     .inline-block{
     display:inline-block;
+    }
+    .w-100%{
+    width:100%;
     }
     .w-75px{
     width:75px;
@@ -571,11 +586,20 @@ function updateTotalSum() {
     .w-150px{
     width:145px;
     }
+    .w-200px{
+    width:200px;
+    }
     .w-400px{
     width:398px;
     }
     .w-500px{
-    width:500px;
+    width:496px;
+    }
+    .w-1100px{
+    width:1098px;
+    }
+    .w-1200px{
+    width:1200px;
     }
     .bg-red{
     background-color: red;
@@ -592,11 +616,17 @@ function updateTotalSum() {
     .mg-0{
     margin:0;
     }
+    .mg-l-100{
+    margin-left:100px;
+    }
     .mg-l--5{
     margin-left:-5px;
     }
     .ta-c{
     text-align:center;
+    }
+    .ta-l{
+  text-align: left;
     }
     .po-ab{
     position:absolute;
@@ -618,6 +648,9 @@ function updateTotalSum() {
     }
     .m-b-25{
     margin-bottom:25px;
+    }
+    .fs-20px{
+    font-size:20px;
     }
     </style>
 <%@ include file="../common/foot.jspf"%>

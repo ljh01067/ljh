@@ -17,6 +17,11 @@ public class ApiTestController {
     public String showAPITest() {
         return "/usr/home/APITest";
     }
+    
+    @RequestMapping("/usr/home/APITest2")
+    public String showAPITest2() {
+        return "/usr/home/APITest2";
+    }
 
     @RequestMapping("/usr/home/getCData")
     @ResponseBody
