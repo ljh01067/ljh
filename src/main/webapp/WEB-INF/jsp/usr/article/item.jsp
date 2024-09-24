@@ -42,7 +42,7 @@ function updateStore() {
                         const roadaddrbasic = item.getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().split(' ')[0];
 
                         // 업소 코드와 지역 조건에 맞는 항목을 필터링
-                        if (businessCodeNames.includes(entptypecode) && (region === '*' || roadaddrbasic === region)) {
+                        if (businessCodeNames.includes(entptypecode) && (region === '' || roadaddrbasic === region)) {
                             const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
                             if (storeName) {
                                 storeNames.push(storeName);
@@ -169,39 +169,55 @@ function fetchItemList() {
     
     console.log(store);
 
-    if (!store || !product) {
+    if (!store && !product) {
         alert("모든 항목을 선택해 주세요.");
         return;
     }
 
-    let entpId, goodId;
+    let entpId = null, goodId = null;
 
     // 첫 번째 요청: /usr/home/getSData에서 store에 해당하는 entpId 가져오기
-    fetchXMLData('/usr/home/getSData', (xmlDoc) => {
-        entpId = getStoreIdFromXML(xmlDoc, store);
-        if (entpId) {
+    if (store) {
+        fetchXMLData('/usr/home/getSData', (xmlDoc) => {
+            entpId = getStoreIdFromXML(xmlDoc, store);
+            console.log("Store ID (entpId):", entpId);
+
             // 두 번째 요청: /usr/home/getCData에서 product에 해당하는 goodId 가져오기
-            fetchXMLData('/usr/home/getCData', (xmlDoc) => {
-                goodId = getProductIdFromXML(xmlDoc, product);
-                if (goodId) {
-                    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기
-                    fetchXMLDataWithParams('/usr/home/getPData', { entpId, goodId, goodInspectDay }, (xmlDoc) => {
-                        const prices = getPricesFromXML(xmlDoc, goodId, entpId);
-                        if (prices.length > 0) {
-                            updatePriceTable(prices);
-                        } else {
-                            console.log("가격을 찾을 수 없음");
-                            alert("해당 상품의 가격을 찾을 수 없습니다.");
-                        }
-                    });
-                } else {
-                    console.log("상품 ID를 찾을 수 없음");
-                    alert("해당 상품의 ID를 찾을 수 없습니다.");
-                }
-            });
+            if (product) {
+                fetchXMLData('/usr/home/getCData', (xmlDoc) => {
+                    goodId = getProductIdFromXML(xmlDoc, product);
+                    console.log("Product ID (goodId):", goodId);
+
+                    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기 (entpId 또는 goodId가 없는 경우도 고려)
+                    fetchPriceData(entpId, goodId, goodInspectDay);
+                });
+            } else {
+                // 상품이 선택되지 않은 경우 상점 ID만으로 가격 조회
+                fetchPriceData(entpId, goodId, goodInspectDay);
+            }
+        });
+    } else if (product) {
+        // 상점이 선택되지 않은 경우 상품 ID만으로 가격 조회
+        fetchXMLData('/usr/home/getCData', (xmlDoc) => {
+            goodId = getProductIdFromXML(xmlDoc, product);
+            console.log("Product ID (goodId):", goodId);
+
+            fetchPriceData(entpId, goodId, goodInspectDay);
+        });
+    }
+}
+
+// 가격 정보를 가져오는 함수 (entpId 또는 goodId가 없는 경우 처리)
+function fetchPriceData(entpId, goodId, goodInspectDay) {
+    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기 (파라미터 없이 호출 가능)
+    fetchXMLDataWithParams('/usr/home/getPData', { entpId, goodId, goodInspectDay }, (xmlDoc) => {
+        const prices = getPricesFromXML(xmlDoc, goodId, entpId);
+
+        if (prices.length > 0) {
+            updatePriceTable(prices);
         } else {
-            console.log("상점 ID를 찾을 수 없음");
-            alert("해당 상점의 ID를 찾을 수 없습니다.");
+            console.log("가격을 찾을 수 없음");
+            alert("해당 상품의 가격을 찾을 수 없습니다.");
         }
     });
 }
@@ -253,22 +269,42 @@ function fetchXMLData(url, callback) {
         });
 }
 
-function fetchXMLDataWithParams(url, params, callback) {
-    console.log("Fetching URL with Params:", url, params);
-    const queryString = new URLSearchParams(params).toString();
-    const finalUrl = url + `?` + queryString;
-    console.log("Final URL:", finalUrl);
-    fetch(url + `?` + queryString)
+function fetchXMLDataWithParams(baseUrl, params, callback) {
+    let finalUrl = baseUrl;
+
+    // 파라미터가 존재하는지 확인하고, URL에 추가
+    if (params) {
+        const urlParams = new URLSearchParams();
+
+        // 각 파라미터의 값이 있을 경우에만 쿼리 스트링에 추가
+        if (params.entpId) {
+            urlParams.append('entpId', params.entpId);
+        }
+        if (params.goodId) {
+            urlParams.append('goodId', params.goodId);
+        }
+        if (params.goodInspectDay) {
+            urlParams.append('goodInspectDay', params.goodInspectDay);
+        }
+
+        // 파라미터가 있으면 '?'를 붙여서 쿼리스트링 형태로 변환
+        if (urlParams.toString()) {
+            finalUrl += '?' + urlParams.toString();
+        }
+    }
+
+    console.log("Final URL:", finalUrl);  // 최종 URL 출력
+
+    // fetch로 요청을 보냄
+    fetch(finalUrl)
         .then(response => response.text())
-        .then(xmlResponse => {
+        .then(data => {
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
-            console.log("Fetched Data:", xmlResponse); // 서버에서 받아온 XML 데이터 확인
+            const xmlDoc = parser.parseFromString(data, "application/xml");
             callback(xmlDoc);
         })
         .catch(error => {
-            console.error('XML 데이터를 가져오는 중 오류 발생:', error);
-            alert('XML 데이터를 가져오는 데 실패했습니다.');
+            console.error("Error fetching XML:", error);
         });
 }
 
@@ -302,7 +338,55 @@ function getProductIdFromXML(xmlDoc, product) {
     return null;
 }
 
-function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
+async function fetchStoreName(entpId) {
+
+    try {
+        const response = await fetch('/usr/home/getSData');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const xmlText = await response.text();
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+
+        // xmlDoc이 null인지 확인
+        if (!xmlDoc) {
+            console.error("Failed to parse XML.");
+            return null;
+        }
+        if (!xmlDoc.documentElement) {
+            console.error("XML Document is not available or invalid.");
+            return null;
+        }
+
+        const storeName = getStoreNameFromXML(xmlDoc, entpId);
+        if (storeName) {
+            console.log("Found store name:", storeName); // 찾은 상점 이름 출력
+        } else {
+            console.log("No matching store found for entpId:", entpId); // 일치하는 상점이 없을 경우 로그
+        }
+        
+        return storeName; // 찾은 상점 이름 반환
+    } catch (error) {
+        console.error('Error fetching store name:', error);
+        return null; // 오류가 발생할 경우 null 반환
+    }
+}
+function getStoreNameFromXML(xmlDoc, entpId) {
+    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+    for (let i = 0; i < items.length; i++) {
+        const itemEntpId = items[i].getElementsByTagName('entpId')[0].textContent;
+        if (entpId === itemEntpId) {
+            const entpName = items[i].getElementsByTagName('entpName')[0].textContent;
+            return entpName; // 찾은 상점 이름 반환
+        }
+    }
+    return null; // 매칭된 상점이 없을 경우 null 반환
+}
+
+async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
     console.log("Parsing Price XML");
 
     // xmlDoc이 null인지 확인
@@ -340,22 +424,57 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
         const itemGoodId = itemGoodIdElement ? itemGoodIdElement.textContent.trim() : null;
         const itemEntpId = itemEntpIdElement ? itemEntpIdElement.textContent.trim() : null;
         const itemGoodPrice = itemGoodPriceElement ? itemGoodPriceElement.textContent.trim() : null;
+
         const store = document.getElementById("store").value;
         const region = document.getElementById("region").value;
         const product = document.getElementById("product").value;
 
-
-        if (itemGoodId === goodId && itemEntpId === entpId) {
-            if (!returnMultiple) {
-                console.log("Matched Price:", itemGoodPrice);
-                return itemGoodPrice;
+        // 상품 아이디와 상점 아이디가 모두 있는 경우
+        if (goodId && entpId) {
+            if (itemGoodId === goodId && itemEntpId === entpId) {
+                if (!returnMultiple) {
+                    console.log("Matched Price:", itemGoodPrice);
+                    return itemGoodPrice;
+                }
+                prices.push({
+                    goodId: region,
+                    entpId: store,
+                    product: product,
+                    price: itemGoodPrice
+                });
             }
-            prices.push({
-                goodId: region,
-                entpId: store,
-                product: product,
-                price: itemGoodPrice
-            });
+        }
+        // 상품 아이디만 있는 경우
+        else if (goodId && !entpId) {
+            if (itemGoodId === goodId) {
+                if (!returnMultiple) {
+                    console.log("Matched Price:", itemGoodPrice);
+                    return itemGoodPrice;
+                }
+                // entpId를 사용하여 상점 이름 가져오기
+                const storeName = await fetchStoreName(itemEntpId); // storeName으로 변경
+                prices.push({
+                    goodId: region,
+                    entpId: storeName, // 가져온 상점 이름 사용
+                    product: product,
+                    price: itemGoodPrice
+                });
+            }
+        }
+        // 상점 아이디만 있는 경우
+        else if (!goodId && entpId) {
+            if (itemEntpId === entpId) {
+                if (!returnMultiple) {
+                    console.log("Matched Price:", itemGoodPrice);
+                    return itemGoodPrice;
+                }
+                prices.push({
+                    goodId: region,
+                    entpId: store,
+                    product: product,
+                    price: itemGoodPrice
+                });
+            }
         }
     }
 
@@ -394,7 +513,7 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
         <div class="inline-block w-100px ta-c pd-0 mg-0">지역</div>
         <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
             <select name="region" id="region" onchange="updateStore()">
-    <option value="*">전체</option>
+    <option value="">전체</option>
     <c:forEach var="region" items="${region}">
         <option value="${region}">${region}</option>
     </c:forEach>
@@ -403,7 +522,7 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
         <div class="inline-block w-100px pd-0 mg-0">판매점</div>
         <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
             <select name="store" id="store" style="vertical-align: middle;">
-                    <option value="" selected disabled>전체</option>
+                    <option value="" >전체</option>
                 </select>
         </div>
         </div>
@@ -413,7 +532,7 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
             <div class="inline-block w-100px ta-c pd-0 mg-0" style="vertical-align: middle;">품목</div>
             <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="category" id="category" onchange="updateDetailItems()">
-    <option value="" selected disabled>품목을 선택하세요</option>
+    <option value="" >품목을 선택하세요</option>
     <c:forEach var="category" items="${categories}">
         <option value="${category}">${category}</option>
     </c:forEach>
@@ -422,7 +541,7 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
             <div class="inline-block w-100px pd-0 mg-0" style="vertical-align: middle;">상세품목</div>
             <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
                 <select name="detailItem" id="detailItem" onchange="updateProductOptions()" style="vertical-align: middle;">
-                    <option value="" selected disabled>상세품목을 선택하세요</option>
+                    <option value="" >상세품목을 선택하세요</option>
                 </select>
             </div>
             <hr class="w-1200px">
@@ -430,7 +549,7 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
             <div class="inline-block ta-c w-100px pd-0 mg-0" style="vertical-align: middle;">상품</div>
             <div class="inline-block w-1100px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="product" id="product" style="vertical-align: middle;">
-                    <option value="" selected disabled>상품을 선택하세요</option>
+                    <option value="" >상품을 선택하세요</option>
                 </select>
             </div>
         </div>

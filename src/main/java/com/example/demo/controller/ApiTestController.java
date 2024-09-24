@@ -85,16 +85,30 @@ public class ApiTestController {
     }
     @RequestMapping("/usr/home/getPData")
     @ResponseBody
-    public String getPData(@RequestParam("entpId") String entpId, @RequestParam("goodId") String goodId, @RequestParam("goodInspectDay") String goodInspectDay) {
+    public String getPData(@RequestParam(value = "entpId", required = false) String entpId,
+                           @RequestParam(value = "goodId", required = false) String goodId,
+                           @RequestParam("goodInspectDay") String goodInspectDay) {
         String apiKey = "0OhBU7ZCGIobDVKDeBJDpmDRqK3IRNF6jlf%2FJB2diFAf%2FfR2czYO9A4UTGcsOwppV6W2HVUeho%2FFPwXoL6DwqA%3D%3D";
-        String urlString = "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductPriceInfoSvc.do?"
-                           + "goodInspectDay=" + goodInspectDay
-                           + "&entpId=" + entpId
-                           + "&goodId=" + goodId
-                           + "&ServiceKey=" + apiKey;
+        StringBuilder urlStringBuilder = new StringBuilder("http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductPriceInfoSvc.do?");
+        
+        // 필수 파라미터 추가
+        urlStringBuilder.append("goodInspectDay=").append(goodInspectDay);
+        
+        // entpId가 있으면 추가
+        if (entpId != null && !entpId.isEmpty()) {
+            urlStringBuilder.append("&entpId=").append(entpId);
+        }
+        
+        // goodId가 있으면 추가
+        if (goodId != null && !goodId.isEmpty()) {
+            urlStringBuilder.append("&goodId=").append(goodId);
+        }
+
+        // API Key 추가
+        urlStringBuilder.append("&ServiceKey=").append(apiKey);
 
         try {
-            URL url = new URL(urlString);
+            URL url = new URL(urlStringBuilder.toString());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
