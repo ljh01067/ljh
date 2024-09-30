@@ -63,7 +63,7 @@ function updateStore() {
                                     }
                                 } else {
                                     // 지역이 'all'이 아닌 경우 업소 코드와 지역 코드 둘 다 필터링
-                                    if (businessCodeNames.includes(entpTypeCode) && entpAreaCode === '0' + regionCode) {
+                                    if (businessCodeNames.includes(entpTypeCode) && entpAreaCode === regionCode) {
                                         const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
                                         console.log("매칭된 상점 이름:", storeName);
                                         if (storeName) {
@@ -116,7 +116,7 @@ function updateDetailItems() {
         data: { category: category },
         success: function(data) {
             if (Array.isArray(data)) {
-                detailItemSelect.innerHTML = "<option value='' selected disabled>상세품목을 선택하세요</option>";
+                detailItemSelect.innerHTML = "<option value='all'>상세품목을 선택하세요</option>";
                 data.forEach(item => {
                     const option = document.createElement("option");
                     option.value = item;
@@ -132,7 +132,7 @@ function updateDetailItems() {
             alert('상세 품목을 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
         }
     });
-    fetchItemList(storeNames);
+
 }
 
 function updateProductOptions() {
@@ -143,7 +143,7 @@ function updateProductOptions() {
         return;
     }
 
-    // 첫 번째 AJAX 호출: goodsmlclscode 가져오기
+    // 첫 번째 AJAX 호출: goodsmlclscode 가져오기(상품 소분류 코드)
     $.ajax({
         url: `/usr/article/products`,
         type: 'GET',
@@ -172,7 +172,7 @@ function updateProductOptions() {
                     
                     // 상품 선택 목록 업데이트
                     const productSelect = document.getElementById("product");
-                    productSelect.innerHTML = "<option value='' selected disabled>상품을 선택하세요</option>";
+                    productSelect.innerHTML = "<option value='all'>상품을 선택하세요</option>";
                     goodNames.forEach(name => {
                         const option = document.createElement("option");
                         option.value = name; // 선택 값으로 goodName을 설정
@@ -191,8 +191,6 @@ function updateProductOptions() {
         }
     });
 }
-</script>
-<script>
 function fetchItemList() {
     console.log("Store Names from updateStore:", storeNames);
 
@@ -203,10 +201,21 @@ function fetchItemList() {
 
     let entpIds = [];
 
+    // 판매점 선택값 가져오기
+    const selectedStore = document.getElementById("storeSelect").value; // storeSelect는 판매점 선택 <select>의 ID
+    
+
     // 첫 번째 요청: /usr/home/getSData에서 store에 해당하는 entpIds 가져오기
     fetchXMLData('/usr/home/getSData', (xmlDoc) => {
-        entpIds = getStoreIdsFromXML(xmlDoc, storeNames); // store 배열을 넘김
+        // 선택한 판매점이 '전체'가 아닐 경우
+        if (selectedStore !== 'all') {
+        	entpIds = getStoreIdsFromXML(xmlDoc, selectedStore); // 선택한 판매점 ID 추가
+        } else {
+            entpIds = getStoreIdsFromXML(xmlDoc, storeNames); // storeNames 사용
+        }
+
         console.log("Fetched Entp IDs:", entpIds); // entpIds 로그 확인
+
         if (entpIds.length > 0) {
             // 두 번째 요청: /usr/home/getCData에서 product에 해당하는 goodId 가져오기
             fetchXMLData('/usr/home/getCData', (xmlDoc) => {
@@ -335,11 +344,8 @@ function getProductIdFromXML(xmlDoc, product) {
     return null;
 }
 
-function getPricesFromXML(xmlDoc, goodId, entpIds) {
+async function getPricesFromXML(xmlDoc, goodId, entpIds) {
     console.log("Parsing Price XML");
-    console.log(entpIds);
-    console.log(goodId);
-    console.log(xmlDoc);
     
     // xmlDoc가 null 또는 undefined인지 확인
     if (!xmlDoc) {
@@ -364,18 +370,16 @@ function getPricesFromXML(xmlDoc, goodId, entpIds) {
         
         const itemGoodId = itemGoodIdElement ? itemGoodIdElement.textContent.trim() : null;
         const itemEntpId = itemEntpIdElement ? itemEntpIdElement.textContent.trim() : null;
-        console.log(itemEntpId);
         const itemGoodPrice = itemGoodPriceElement ? itemGoodPriceElement.textContent.trim() : null;
 
         // 여러 entpId와 비교하여 가격 정보 추가
         if (itemGoodId === goodId && entpIds.includes(itemEntpId)) {
-        	let region = document.getElementById("region")?.value;
-        	let storename = getEntpNameById(itemEntpId);
-        	let goodname = getEntpNameById(goodId);
-        	console.log("storename: "+storename);
-        	console.log("goodname: "goodname);
+            const stroeregion = await getRegionNameById(itemEntpId);
+            console.log(stroeregion);
+            const storename = await getEntpNameById(itemEntpId); // await로 비동기 결과 기다리기
+            const goodname = await getGoodNameById(goodId); // await로 비동기 결과 기다리기
             prices.push({
-                goodId: region,
+                goodId: stroeregion,
                 entpId: storename,
                 product: goodname, // 이곳에서 사용할 제품 정보를 추가
                 price: itemGoodPrice
@@ -386,79 +390,96 @@ function getPricesFromXML(xmlDoc, goodId, entpIds) {
     console.log("Matched Prices:", prices);
     return prices; // 가격 정보 배열 반환
 }
-function getEntpNameById(entpId) {
+
+async function getEntpNameById(entpId) {
     const url = `/usr/home/getSData`; // 상점 정보를 가져오는 API 호출 URL
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("네트워크 응답이 좋지 않습니다.");
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("네트워크 응답이 좋지 않습니다.");
+        }
+        const xmlResponse = await response.text(); // XML 형식으로 응답을 텍스트로 변환
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+        
+        const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+        let entpName = null;
+        for (const item of items) {
+            const id = item.getElementsByTagName('entpId')[0]?.textContent.trim();
+            if (id === entpId) {
+                entpName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
+                break; // 원하는 entpId를 찾으면 루프 종료
             }
-            return response.text(); // XML 형식으로 응답을 텍스트로 변환
-        })
-        .then(xmlResponse => {
-            // XML 파싱
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
-            
-            // XML 데이터에서 'iros.openapi.service.vo.entpInfoVO' 태그 찾기
-            const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
-            console.log("Items:", items);
-            // XML 데이터에서 필드를 추출하여 처리
-            let entpName = null;
-            for (const item of items) {
-                const id = item.getElementsByTagName('entpId')[0]?.textContent.trim();
-                console.log('id: '+id);
-                console.log('entpid: '+entpid);
-                if (id === entpId) {
-                    entpName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
-                    break; // 원하는 entpId를 찾으면 루프 종료
-                }
-            }
-            if (entpName) {
-                console.log("EntpName:", entpName);
-            } else {
-                console.log("해당 ID에 대한 상점 정보를 찾을 수 없습니다.");
-            }
-        })
-        .catch(error => {
-            console.error("API 호출 중 오류 발생:", error);
-        });
+        }
+        if (entpName) {
+            return entpName;
+        } else {
+            console.log("해당 ID에 대한 상점 정보를 찾을 수 없습니다.");
+        }
+    } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
+    }
 }
-function getGoodNameById(goodId) {
+
+async function getGoodNameById(goodId) {
     const url = `/usr/home/getCData`; // 상점 정보를 가져오는 API 호출 URL
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("네트워크 응답이 좋지 않습니다.");
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("네트워크 응답이 좋지 않습니다.");
+        }
+        const xmlResponse = await response.text(); // XML 형식으로 응답을 텍스트로 변환
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+        
+        const items = xmlDoc.getElementsByTagName('item');
+        let goodName = null;
+        for (const item of items) {
+            const id = item.getElementsByTagName('goodId')[0]?.textContent.trim();
+            if (id === goodId) {
+                goodName = item.getElementsByTagName('goodName')[0]?.textContent.trim();
+                break; // 원하는 goodId를 찾으면 루프 종료
             }
-            return response.text(); // XML 형식으로 응답을 텍스트로 변환
-        })
-        .then(xmlResponse => {
-            // XML 파싱
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
-            
-            // XML 데이터에서 'item' 태그 찾기
-            const items = xmlDoc.getElementsByTagName('item');
-            console.log("Items:", items);
-            // XML 데이터에서 필드를 추출하여 처리
-            let entpName = null;
-            for (const item of items) {
-                const id = item.getElementsByTagName('goodId')[0]?.textContent.trim();
-                if (id === goodId) {
-                    entpName = item.getElementsByTagName('goodName')[0]?.textContent.trim();
-                    break; // 원하는 entpId를 찾으면 루프 종료
-                }
-            }
-            if (entpName) {
-                console.log("GoodName:", goodName);
-            } else {
-                console.log("해당 ID에 대한 상점 정보를 찾을 수 없습니다.");
-            }
-        })
-        .catch(error => {
-            console.error("API 호출 중 오류 발생:", error);
-        });
+        }
+        if (goodName) {
+            return goodName;
+        } else {
+            console.log("해당 ID에 대한 제품 정보를 찾을 수 없습니다.");
+        }
+    } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
+    }
+}
+
+async function getRegionNameById(entpId) {
+    const url = `/usr/home/getRData?entpId=` + entpId;  // 상점 정보를 가져오는 API 호출 URL
+    console.log(url);
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("네트워크 응답이 좋지 않습니다.");
+        }
+        const xmlResponse = await response.text();  // XML 형식으로 응답을 텍스트로 변환
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+
+        // 지역 코드에서 앞자리 0 제거
+        const regioncode = xmlDoc.getElementsByTagName('entpAreaCode')[0].textContent.trim();
+        console.log("변경된 지역 코드: " + regioncode);
+
+        // 서버로 지역 코드를 전송하여 지역 이름을 가져오기
+        const regionNameResponse = await fetch(`/usr/article/getRegion?regioncode=`+regioncode);
+        if (!regionNameResponse.ok) {
+            throw new Error("서버에서 지역 이름을 가져오는 중 오류 발생");
+        }
+        const regionName = await regionNameResponse.text();  // 지역 이름 응답을 텍스트로 변환
+        console.log("지역 이름 성공적으로 받아옴:", regionName);
+        return regionName;  // 지역 이름 반환
+    } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
+        return null;  // 오류 발생 시 null 반환
+    }
 }
 </script>
 <div class="w-100%">

@@ -47,4 +47,7 @@ public class ItemPriceService {
     public String getRegionCodeByRegionName(String region) {
         return itemPriceRepository.findCodeByRegion(region);
     }
+    public String getRegionfindRegionByCode(String regioncode) {
+        return itemPriceRepository.findRegionByCode(regioncode);
+    }
 }

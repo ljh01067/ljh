@@ -11,7 +11,7 @@ CREATE TABLE business(
 CREATE TABLE region(
        id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
       `name` CHAR(20) NOT NULL,
-      `code` INT(10) NOT NULL
+      `code` CHAR(20) NOT NULL
 );
 
 CREATE TABLE category(
@@ -23,10 +23,6 @@ CREATE TABLE detailitem(
       detailid INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
       `name` CHAR(20) NOT NULL,
       goodSmlclsCode INT(10) NOT NULL
-);
-CREATE TABLE product(
-      detailid INT(10) NOT NULL,
-      `name` CHAR(20) NOT NULL
 );
 INSERT INTO business
 SET `name` = '대형마트',
@@ -46,55 +42,55 @@ codeName = 'CS';
 
 INSERT INTO region
 SET `name` = '서울특별시',
-`code` = 020100000;
+`code` = '020100000';
 INSERT INTO region
 SET `name` = '부산광역시',
-`code` = 020500000;
+`code` = '020500000';
 INSERT INTO region
 SET `name` = '대구광역시',
-`code` = 020300000;
+`code` = '020300000';
 INSERT INTO region
 SET `name` = '대전광역시',
-`code` = 020400000;
+`code` = '020400000';
 INSERT INTO region
 SET `name` = '광주광역시',
-`code` = 020200000;
+`code` = '020200000';
 INSERT INTO region
 SET `name` = '울산광역시',
-`code` = 020600000;
+`code` = '020600000';
 INSERT INTO region
 SET `name` = '인천광역시',
-`code` = 020700000;
+`code` = '020700000';
 INSERT INTO region
 SET `name` = '강원특별자치도',
-`code` = 020800000;
+`code` = '020800000';
 INSERT INTO region
 SET `name` = '경기도',
-`code` = 020900000;
+`code` = '020900000';
 INSERT INTO region
 SET `name` = '경상남도',
-`code` = 021000000;
+`code` = '021000000';
 INSERT INTO region
 SET `name` = '경상북도',
-`code` = 021100000;
+`code` = '021100000';
 INSERT INTO region
 SET `name` = '전라남도',
-`code` = 021200000;
+`code` = '021200000';
 INSERT INTO region
 SET `name` = '전북특별자치도',
-`code` = 021301000;
+`code` = '021301000';
 INSERT INTO region
 SET `name` = '충청남도',
-`code` = 021400000;
+`code` = '021400000';
 INSERT INTO region
 SET `name` = '충청북도',
-`code` = 021500000;
+`code` = '021500000';
 INSERT INTO region
 SET `name` = '제주특별자치도',
-`code` = 021600000;
+`code` = '021600000';
 INSERT INTO region
 SET `name` = '세종특별자치시',
-`code` = 021700000;
+`code` = '021700000';
 
 INSERT INTO category
 SET `name` = '곡물가공품';
@@ -107,7 +103,7 @@ SET `name` = '낙농·축산가공품';
 INSERT INTO category
 SET `name` = '조미료·장류·식용유';
 INSERT INTO category
-SET `name` = '채소';
+SET `name` = '채소',;
 INSERT INTO category
 SET `name` = '과자·빙과류';
 INSERT INTO category
@@ -759,63 +755,3 @@ INSERT INTO detailitem
 SET categoryid =13,
 `name` = '쌀(백미)',
 goodSmlclsCode = 30205015;
-
-INSERT INTO product
-SET detailid =1,
-`name` = '일반쌀';
-INSERT INTO product
-SET detailid =1,
-`name` = '유기농쌀';
-INSERT INTO product
-SET detailid =2,
-`name` = '강력분';
-INSERT INTO product
-SET detailid =2,
-`name` = '중력분';
-INSERT INTO product
-SET detailid =3,
-`name` = '찰보리';
-INSERT INTO product
-SET detailid =3,
-`name` = '일반보리';
-INSERT INTO product
-SET detailid =4,
-`name` = '한우';
-INSERT INTO product
-SET detailid =4,
-`name` = '수입산';
-INSERT INTO product
-SET detailid =5,
-`name` = '삼겹살';
-INSERT INTO product
-SET detailid =5,
-`name` = '목살';
-INSERT INTO product
-SET detailid =6,
-`name` = '닭가슴살';
-INSERT INTO product
-SET detailid =6,
-`name` = '닭다리';
-
-SELECT * FROM business;
-SELECT * FROM region;
-SELECT * FROM category;
-SELECT * FROM detailitem;
-SELECT * FROM product;
-
-SELECT `name` FROM category;
-
-SELECT p.name FROM category c
-INNER JOIN detailitem d ON c.id = d.categoryid
-INNER JOIN product p ON d.detailid = p.detailid
-WHERE c.`name` = '곡물가공품' AND d.`name`='밀가루';
-
-SELECT d.name FROM category c
-INNER JOIN detailitem d ON c.id = d.categoryid
-WHERE c.`name` = '곡물가공품';
-
-SELECT d.goodSmlclsCode FROM detailitem d WHERE d.name = '견과류';
-
-SELECT b.codeName 
-    	    FROM business b
-    	    WHERE b.`name` IN ('대형마트');

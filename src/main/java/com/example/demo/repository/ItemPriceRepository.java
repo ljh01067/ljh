@@ -45,5 +45,10 @@ public interface ItemPriceRepository {
             SELECT `code` FROM region WHERE name = #{region};
             """)
     public String findCodeByRegion(@Param("region") String region);
+    
+    @Select("""
+            SELECT name FROM region WHERE `code` = #{regioncode};
+            """)
+    public String findRegionByCode(@Param("regioncode") String regioncode);
 
 }

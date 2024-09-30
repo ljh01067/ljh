@@ -88,6 +88,9 @@ public class ApiTestController {
     public String getRData(@RequestParam(value = "entpId", required = false) String entpId) {
         String apiKey = "SeObeTWuK%2FAMq7zR7X0v6MFfspketKnfr3zWDlK12BG1T%2FEKIAE9Chtqzxf8bOWF2t0YDhcrDnywui%2FVuwm55g%3D%3D";
         String urlString = "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getStoreInfoSvc.do?serviceKey=" + apiKey + "&entpId=" + entpId;
+        
+        System.out.println("요청된 URL: " + urlString);
+        System.out.println("상점 ID: " + entpId);
 
         try {
             URL url = new URL(urlString);
@@ -104,6 +107,7 @@ public class ApiTestController {
 
             in.close();
             connection.disconnect();
+            System.out.println("상점이름: " + content.toString());
 
             // API 응답 데이터를 그대로 클라이언트로 전달
             return content.toString();

@@ -133,6 +133,16 @@ public class ItemPriceController {
             throw new RuntimeException("서버 오류가 발생했습니다. 나중에 다시 시도해 주세요.");
         }
     }
+    
+    @GetMapping("/getRegion")
+    @ResponseBody  // 이 애노테이션은 반환 값을 HTTP 응답 본문에 직접 작성해야 함을 나타냅니다.
+    public String getRegion(@RequestParam("regioncode") String regioncode) {
+        System.out.println("받은 지역: " + regioncode);  // 받은 지역 로그
+
+            String region = itemPriceService.getRegionfindRegionByCode(regioncode);
+            System.out.println("반환할 지역 코드: " + region);  // 반환할 지역 코드 로그
+            return region;  // 성공적으로 지역 코드 반환
+    }
 
     
     @GetMapping("/itemlist")
